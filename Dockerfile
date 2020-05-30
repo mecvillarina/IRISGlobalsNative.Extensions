@@ -77,7 +77,6 @@ RUN \
 USER irisowner
 
 COPY  --chown=irisowner Installer.cls .
-COPY  --chown=irisowner src src
 
 # Configure this demo IRIS instance
 SHELL ["/irissession.sh"]
@@ -91,20 +90,3 @@ ENV PATH="/usr/irissys/bin/:${PATH}"
 
 # bringing the standard shell back
 SHELL ["/bin/bash", "-c"]
-
-FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS build-env
-WORKDIR /app
-
-# Copy csproj and restore as distinct layers
-COPY SampleWebApp/*.csproj ./
-RUN dotnet restore
-
-# Copy everything else and build
-COPY SampleWebApp/. ./
-RUN dotnet publish -c Release -o out
-
-# Build runtime image
-FROM mcr.microsoft.com/dotnet/core/aspnet:3.1
-WORKDIR /app
-COPY --from=build-env /app/out .
-ENTRYPOINT ["dotnet", "IRISGlobalsNative.Extensions.SampleWebApp.dll"]
