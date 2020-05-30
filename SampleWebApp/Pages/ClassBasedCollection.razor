@@ -1,0 +1,214 @@
+﻿@page "/classbasedcollection"
+
+@using IRISGlobalsNative.Extensions.SampleWebApp.Models
+@using Microsoft.Extensions.Configuration
+@using InterSystems.Data.IRISClient
+@using InterSystems.Data.IRISClient.ADO
+
+<h1>Class-based Collection for Globals</h1>
+
+<div class="alert  alert-info" role="alert">
+    <span class="oi oi-pencil mr-2" aria-hidden="true"></span>
+
+    <span class="text-wrap">
+        One of the features of IRISGlobalsNative.Extensions is the Class-based Collection for Globals.
+    </span>
+
+    <br />
+
+    <span class="oi oi-pencil mr-2" aria-hidden="true"></span>
+    <span class="text-wrap">
+        All the collection will be saved at the single global "^CollectionGlobals"
+    </span>
+
+    <br />
+
+    <span class="oi oi-pencil mr-2" aria-hidden="true"></span>
+    <span class="text-wrap">
+        This is pretty helpful when you want to store a temporary collection into your Globals based from your model classes and you want to utilize some capability of LINQ.<br />
+    </span>
+</div>
+
+<h2>Features</h2>
+
+<ul class="list-group">
+    <li class="list-group-item">Add: Add object to collection</li>
+    <li class="list-group-item">AddRange: Add list of objects into a colllection</li>
+    <li class="list-group-item">Clear: Clear collection (Clear)</li>
+    <li class="list-group-item">Count: Count colllection objects based on certain criteria</li>
+    <li class="list-group-item">FirstOrDefault: Get first object based on certain criteria</li>
+    <li class="list-group-item">RemoveAll: Remove all objects in the collection based on certain criteria</li>
+    <li class="list-group-item">RemoveAt: Remove object at the specified index</li>
+    <li class="list-group-item">ToList: Get all collection objects</li>
+    <li class="list-group-item">Update: Update object in a collection </li>
+    <li class="list-group-item">Where: Get collection objects based on certain criteria </li>
+</ul>
+
+<h2 class="mt-4">Sample</h2>
+<p>In this sample, we will have a class named "PatientModel". It has 3 properties ID, FirstName, LastName</p>
+<h4 class="mt-4">Data</h4>
+
+@if (_patients == null || !_patients.Any())
+{
+    <p><em>No data yet...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Patient ID</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var patient in _patients)
+            {
+                <tr>
+                    <td>@patient.Id</td>
+                    <td>@patient.FirstName</td>
+                    <td>@patient.LastName</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<h4 class="mt-4">Add</h4>
+<EditForm Model="@addPatientModel" OnValidSubmit="AddNewPatient">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="row">
+        <div class="form-group col">
+            <label for="AddPatientID">Patient ID</label>
+            <InputText id="AddPatientID" class="form-control" placeholder="Patient Id" @bind-Value="addPatientModel.Id" />
+        </div>
+
+        <div class="form-group col">
+            <label for="AddPatientFirstName">First Name</label>
+            <InputText id="AddPatientFirstName" class="form-control" placeholder="First Name" @bind-Value="addPatientModel.FirstName" />
+        </div>
+
+        <div class="form-group col">
+            <label for="AddPatientLastName">Last Name</label>
+            <InputText id="AddPatientLastName" class="form-control" placeholder="Last Name" @bind-Value="addPatientModel.LastName" />
+        </div>
+
+        <div class="form-group col">
+            <label for="addPatientBtn"></label>
+            <button id="addPatientBtn" type="submit" class="btn btn-primary btn-block">Submit</button>
+        </div>
+    </div>
+</EditForm>
+
+<h4 class="mt-4">Clear All</h4>
+<button class="btn btn-danger" @onclick="ClearAllPatient">Clear All</button>
+
+<h4 class="mt-4">Count</h4>
+<p><strong>Patient Count: @_patientCount</strong></p>
+
+<h4 class="mt-4">Count (with First Name starts with "M")</h4>
+<p><strong>Patient Count: @_patientCountWithCriteria</strong></p>
+
+<h4 class="mt-4">FirstOrDefault (with First Name starts with "A")</h4>
+@if (_patientFirstOrDefaultWithCriteria == null)
+{
+    <p><em>No patient first name starts with "A"...</em></p>
+}
+else
+{
+    <p><strong>Patient Info: @_patientFirstOrDefaultWithCriteria.Id @_patientFirstOrDefaultWithCriteria.FirstName @_patientFirstOrDefaultWithCriteria.LastName</strong></p>
+}
+
+<h4 class="mt-4">Remove At (Zero-based Indexing)</h4>
+<EditForm Model="@removePatientAtIndex" OnValidSubmit="RemovePatientByIndex">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="row">
+        <div class="form-group col">
+            <label for="RemovePatientAt">Index</label>
+            <InputNumber id="RemovePatientAt" type="number" class="form-control" placeholder="Enter valid index" @bind-Value="removePatientAtIndex" />
+        </div>
+
+        <div class="form-group col">
+            <label for="RemovePatientAtBtn"></label>
+            <button id="RemovePatientAtBtn" type="submit" class="btn btn-primary btn-block">Remove</button>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+
+    private readonly IGlobalsNativeCollection<PatientModel> _patientCollection;
+    private List<PatientModel> _patients;
+    private int _patientCount;
+    private int _patientCountWithCriteria;
+    private PatientModel _patientFirstOrDefaultWithCriteria;
+    private PatientModel addPatientModel = new PatientModel();
+    private int removePatientAtIndex  = 0;
+
+    public ClassBasedCollection()
+    {
+        string ip = "104.197.75.13";
+        string port = "27021";
+        string Namespace = "USER";
+        string username = "SuperUser";
+        string password = "SYS";
+
+        IRISConnection connection = new IRISConnection(ip, port, Namespace, username, password);
+        connection.Open();
+        IRIS irisNative = IRIS.CreateIRIS(connection);
+        _patientCollection = new GlobalsNativeCollection<PatientModel>(irisNative, "Patients");
+    }
+
+    protected override void OnInitialized()
+    {
+        FetchInfo();
+    }
+
+
+    private void FetchInfo()
+    {
+        _patients = _patientCollection.ToList();
+        _patientCount = _patientCollection.Count();
+        _patientCountWithCriteria = _patientCollection.Count(x => x.FirstName.StartsWith("M"));
+        _patientFirstOrDefaultWithCriteria = _patientCollection.FirstOrDefault(x => x.FirstName.StartsWith("A"));
+
+        addPatientModel.Id = string.Empty;
+        addPatientModel.FirstName = string.Empty;
+        addPatientModel.LastName = string.Empty;
+
+        removePatientAtIndex = 0;
+    }
+
+    private void AddNewPatient()
+    {
+        _patientCollection.Add(addPatientModel);
+        FetchInfo();
+    }
+
+    private void ClearAllPatient()
+    {
+        _patientCollection.Clear();
+        FetchInfo();
+    }
+
+    private void RemovePatientByIndex()
+    {
+        try
+        {
+            _patientCollection.RemoveAt(removePatientAtIndex);
+        }
+        catch
+        {
+
+        }
+        finally
+        {
+            FetchInfo();
+        }
+    }
+}
