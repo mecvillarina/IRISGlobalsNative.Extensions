@@ -1,0 +1,139 @@
+﻿@page "/jsonprovider"
+
+@using IRISGlobalsNative.Extensions.SampleWebApp.Models
+@using Microsoft.Extensions.Configuration
+@using InterSystems.Data.IRISClient
+@using InterSystems.Data.IRISClient.ADO
+
+<h1>Class-based Collection for Globals</h1>
+
+<div class="alert  alert-info" role="alert">
+    <span class="oi oi-pencil mr-2" aria-hidden="true"></span>
+    <span class="text-wrap">
+        Another feature of IRISGlobalsNative.Extensions is Json Provider for Globals. This is pretty helpful when you want import your import json data or export your imported json data into the globals. The library will extract all the possible paths and its value from your json file and save it individually into the specified Global.
+    </span>
+</div>
+
+<h2>Features (Library Methods)</h2>
+
+<ul class="list-group">
+    <li class="list-group-item"><strong>ImportJsonStringToGlobal</strong>: Import json string into specified Global</li>
+    <li class="list-group-item"><strong>GetPathList</strong>: Fetch all the json nodes stored from the specified Global</li>
+    <li class="list-group-item"><strong>GetObject</strong>: Fetch object with specified path/json note from your globals</li>
+    <li class="list-group-item"><strong>ExportJsonStringFromGlobal</strong>: Export the imported json string.</li>
+</ul>
+
+<h2 class="mt-4">Sample</h2>
+<p>For this sample, we will just set assign a static value for our GlobalName. Our Global will be named as "^JsonTreeGlobal".</p>
+
+<h4 class="mt-4">Sample Json Data</h4>
+<a href="data/data1.json" class="btn btn-primary">Download Sample Data1</a>
+<a href="data/data1.json" class="btn btn-primary">Download Sample Data1</a>
+<a href="data/data1.json" class="btn btn-primary">Download Sample Data1</a>
+
+<h4 class="mt-4">Import Json (ImportJsonStringToGlobal)</h4>
+<p><strong>Disclaimer</strong>: The import functionality of this web app doesn't have any plausibility check. You need to enter a valid json string to make it work correctly.</p>
+
+<EditForm Model="@importJsonModel" OnValidSubmit="ExecuteImportJson">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="ImportJsonStr">Json Data</label>
+        <InputTextArea rows="15" id="ImportJsonStr" disabled=@IsLoading class="form-control" placeholder="Paste some json string here" required @bind-Value="importJsonModel.JsonValue" />
+    </div>
+
+    <button type="submit" disabled=@IsLoading class="btn btn-primary btn-block">Import</button>
+</EditForm>
+
+<h4 class="mt-4">Get Json Nodes (GetPathList)</h4>
+@if (_jsonPaths == null || !_jsonPaths.Any())
+{
+    <p><em>No json data has been imported yet.</em></p>
+}
+else
+{
+    <table class="table">
+        <tbody>
+            @foreach (var jsonPath in _jsonPaths)
+            {
+                <tr>
+                    <td>@jsonPath</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+
+<h4 class="mt-4">Export Json Data (ExportJsonStringFromGlobal)</h4>
+<button type="submit" disabled=@IsLoading class="btn btn-primary btn-block" @onclick="ExecuteExportJson">Export</button>
+@if (string.IsNullOrEmpty(ExportedJson))
+{
+    <p><em>No json data has been imported yet.</em></p>
+}
+else
+{
+    <h5 class="mt-2">Json Data</h5>
+    <p>@ExportedJson</p>
+}
+
+<br />
+@code {
+
+    private ImportJsonModel importJsonModel = new ImportJsonModel();
+    private readonly IGlobalsNativeJsonTreeProvider _globalJsonTreeProvider;
+    private List<string> _jsonPaths = new List<string>();
+    protected bool IsLoading = false;
+    protected string ExportedJson = string.Empty;
+
+    public JsonProviderForGlobals()
+    {
+        string ip = "104.197.75.13";
+        string port = "27021";
+        string Namespace = "USER";
+        string username = "SuperUser";
+        string password = "SYS";
+
+        IRISConnection connection = new IRISConnection(ip, port, Namespace, username, password);
+        connection.Open();
+        IRIS irisNative = IRIS.CreateIRIS(connection);
+
+        _globalJsonTreeProvider = new GlobalsNativeJsonTreeProvider(irisNative, "^JsonTreeGlobal");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        IsLoading = true;
+        await Task.Delay(100);
+        FetchInfo();
+        IsLoading = false;
+    }
+
+    private void FetchInfo()
+    {
+        _jsonPaths = _globalJsonTreeProvider.GetPathList();
+        importJsonModel.JsonValue = string.Empty;
+        ExportedJson = string.Empty;
+    }
+
+    private async Task ExecuteImportJson()
+    {
+        IsLoading = true;
+
+        await Task.Delay(100);
+        _globalJsonTreeProvider.ImportJsonStringToGlobal(importJsonModel.JsonValue);
+        FetchInfo();
+        IsLoading = false;
+    }
+
+    private async Task ExecuteExportJson()
+    {
+        IsLoading = true;
+
+        await Task.Delay(100);
+        FetchInfo();
+        ExportedJson = _globalJsonTreeProvider.ExportJsonStringFromGlobal();
+        IsLoading = false;
+    }
+}

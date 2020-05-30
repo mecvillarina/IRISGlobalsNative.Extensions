@@ -8,7 +8,7 @@
 <h1>Class-based Collection for Globals</h1>
 
 <div class="alert  alert-info" role="alert">
-    <span class="oi oi-pencil mr-2" aria-hidden="true"></span>
+    <span class="oi oi-list mr-2" aria-hidden="true"></span>
 
     <span class="text-wrap">
         One of the features of IRISGlobalsNative.Extensions is the Class-based Collection for Globals.
@@ -16,7 +16,7 @@
 
     <br />
 
-    <span class="oi oi-pencil mr-2" aria-hidden="true"></span>
+    <span class="oi oi-document mr-2" aria-hidden="true"></span>
     <span class="text-wrap">
         All the collection will be saved at the single global "^CollectionGlobals"
     </span>
@@ -29,19 +29,20 @@
     </span>
 </div>
 
-<h2>Features</h2>
+<h2>Features (Library Methods)</h2>
 
 <ul class="list-group">
-    <li class="list-group-item">Add: Add object to collection</li>
-    <li class="list-group-item">AddRange: Add list of objects into a colllection</li>
-    <li class="list-group-item">Clear: Clear collection (Clear)</li>
-    <li class="list-group-item">Count: Count colllection objects based on certain criteria</li>
-    <li class="list-group-item">FirstOrDefault: Get first object based on certain criteria</li>
-    <li class="list-group-item">RemoveAll: Remove all objects in the collection based on certain criteria</li>
-    <li class="list-group-item">RemoveAt: Remove object at the specified index</li>
-    <li class="list-group-item">ToList: Get all collection objects</li>
-    <li class="list-group-item">Update: Update object in a collection </li>
-    <li class="list-group-item">Where: Get collection objects based on certain criteria </li>
+    <li class="list-group-item"><strong>Add</strong>: Add object to collection</li>
+    <li class="list-group-item"><strong>AddRange</strong>: Add list of objects into a colllection</li>
+    <li class="list-group-item"><strong>AsQueryable</strong>: Returns a IQueryable to utilize some LINQ capabilities</li>
+    <li class="list-group-item"><strong>Clear</strong>: Clear collection (Clear)</li>
+    <li class="list-group-item"><strong>Count</strong>: Count colllection objects based on certain criteria</li>
+    <li class="list-group-item"><strong>FirstOrDefault</strong>: Get first object based on certain criteria</li>
+    <li class="list-group-item"><strong>RemoveAll</strong>: Remove all objects in the collection based on certain criteria</li>
+    <li class="list-group-item"><strong>RemoveAt</strong>: Remove object at the specified index</li>
+    <li class="list-group-item"><strong>ToList</strong>: Get all collection objects</li>
+    <li class="list-group-item"><strong>Update</strong>: Update object in a collection </li>
+    <li class="list-group-item"><strong>Where</strong>: Get collection objects based on certain criteria </li>
 </ul>
 
 <h2 class="mt-4">Sample</h2>
@@ -142,7 +143,7 @@ else
 
 @code {
 
-    private readonly IGlobalsNativeCollection<PatientModel> _patientCollection;
+    private IGlobalsNativeCollection<PatientModel> _patientCollection;
     private List<PatientModel> _patients;
     private int _patientCount;
     private int _patientCountWithCriteria;
@@ -150,7 +151,7 @@ else
     private PatientModel addPatientModel = new PatientModel();
     private int removePatientAtIndex  = 0;
 
-    public ClassBasedCollection()
+    protected override void OnInitialized()
     {
         string ip = "104.197.75.13";
         string port = "27021";
@@ -162,13 +163,9 @@ else
         connection.Open();
         IRIS irisNative = IRIS.CreateIRIS(connection);
         _patientCollection = new GlobalsNativeCollection<PatientModel>(irisNative, "Patients");
-    }
 
-    protected override void OnInitialized()
-    {
         FetchInfo();
     }
-
 
     private void FetchInfo()
     {
