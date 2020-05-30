@@ -17,4 +17,4 @@ services:
       dockerfile: SampleWebApp/Dockerfile
     restart: always
     ports:
-      - 5001:80
+      - 9092:9092

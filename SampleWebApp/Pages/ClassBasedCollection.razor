@@ -5,6 +5,8 @@
 @using InterSystems.Data.IRISClient
 @using InterSystems.Data.IRISClient.ADO
 
+@inject IConfiguration Configuration
+
 <h1>Class-based Collection for Globals</h1>
 
 <div class="alert  alert-info" role="alert">
@@ -84,28 +86,28 @@ else
     <div class="row">
         <div class="form-group col">
             <label for="AddPatientID">Patient ID</label>
-            <InputText id="AddPatientID" class="form-control" placeholder="Patient Id" @bind-Value="addPatientModel.Id" />
+            <InputText id="AddPatientID" class="form-control" disabled=@IsLoading placeholder="Patient Id" @bind-Value="addPatientModel.Id" />
         </div>
 
         <div class="form-group col">
             <label for="AddPatientFirstName">First Name</label>
-            <InputText id="AddPatientFirstName" class="form-control" placeholder="First Name" @bind-Value="addPatientModel.FirstName" />
+            <InputText id="AddPatientFirstName" class="form-control" disabled=@IsLoading placeholder="First Name" @bind-Value="addPatientModel.FirstName" />
         </div>
 
         <div class="form-group col">
             <label for="AddPatientLastName">Last Name</label>
-            <InputText id="AddPatientLastName" class="form-control" placeholder="Last Name" @bind-Value="addPatientModel.LastName" />
+            <InputText id="AddPatientLastName" class="form-control" disabled=@IsLoading placeholder="Last Name" @bind-Value="addPatientModel.LastName" />
         </div>
 
         <div class="form-group col">
             <label for="addPatientBtn"></label>
-            <button id="addPatientBtn" type="submit" class="btn btn-primary btn-block">Submit</button>
+            <button id="addPatientBtn" type="submit" disabled=@IsLoading class="btn btn-primary btn-block">Submit</button>
         </div>
     </div>
 </EditForm>
 
 <h4 class="mt-4">Clear All</h4>
-<button class="btn btn-danger" @onclick="ClearAllPatient">Clear All</button>
+<button class="btn btn-danger" disabled=@IsLoading @onclick="ClearAllPatient">Clear All</button>
 
 <h4 class="mt-4">Count</h4>
 <p><strong>Patient Count: @_patientCount</strong></p>
@@ -131,12 +133,12 @@ else
     <div class="row">
         <div class="form-group col">
             <label for="RemovePatientAt">Index</label>
-            <InputNumber id="RemovePatientAt" type="number" class="form-control" placeholder="Enter valid index" @bind-Value="removePatientAtIndex" />
+            <InputNumber id="RemovePatientAt" disabled=@IsLoading type="number" class="form-control" placeholder="Enter valid index" @bind-Value="removePatientAtIndex" />
         </div>
 
         <div class="form-group col">
             <label for="RemovePatientAtBtn"></label>
-            <button id="RemovePatientAtBtn" type="submit" class="btn btn-primary btn-block">Remove</button>
+            <button id="RemovePatientAtBtn" type="submit" disabled=@IsLoading class="btn btn-primary btn-block">Remove</button>
         </div>
     </div>
 </EditForm>
@@ -149,22 +151,24 @@ else
     private int _patientCountWithCriteria;
     private PatientModel _patientFirstOrDefaultWithCriteria;
     private PatientModel addPatientModel = new PatientModel();
-    private int removePatientAtIndex  = 0;
+    private int removePatientAtIndex = 0;
+    protected bool IsLoading = false;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        string ip = "104.197.75.13";
-        string port = "27021";
-        string Namespace = "USER";
-        string username = "SuperUser";
-        string password = "SYS";
+        IsLoading = true;
 
-        IRISConnection connection = new IRISConnection(ip, port, Namespace, username, password);
+        await Task.Delay(100);
+        IRISConnection connection = new IRISConnection();
+        connection.ConnectionString = Configuration.GetSection("IRISConnectionString").Value;
         connection.Open();
         IRIS irisNative = IRIS.CreateIRIS(connection);
+
         _patientCollection = new GlobalsNativeCollection<PatientModel>(irisNative, "Patients");
 
         FetchInfo();
+
+        IsLoading = false;
     }
 
     private void FetchInfo()
@@ -183,18 +187,30 @@ else
 
     private void AddNewPatient()
     {
+        IsLoading = true;
+        Task.Delay(100);
+
         _patientCollection.Add(addPatientModel);
         FetchInfo();
+
+        IsLoading = false;
     }
 
     private void ClearAllPatient()
     {
+        IsLoading = true;
+        Task.Delay(100);
+
         _patientCollection.Clear();
         FetchInfo();
+
+        IsLoading = false;
     }
 
     private void RemovePatientByIndex()
     {
+        IsLoading = true;
+        Task.Delay(100);
         try
         {
             _patientCollection.RemoveAt(removePatientAtIndex);
@@ -207,5 +223,6 @@ else
         {
             FetchInfo();
         }
+        IsLoading = false;
     }
 }
